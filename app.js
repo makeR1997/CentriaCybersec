@@ -12,7 +12,6 @@ const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const bodyParser = require('body-parser');
 const path = require('path');
-const app = express();
 
 // Middleware for parsing request bodies
 app.use(bodyParser.json());
