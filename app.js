@@ -1,5 +1,12 @@
 import { Hono } from "https://deno.land/x/hono/mod.ts";
+import client from "./db/db.js";
+import * as bcrypt from "https://deno.land/x/bcrypt/mod.ts"; // For password hashing
+import { xss } from "https://deno.land/x/hono_xss/mod.ts"; // For XSS protection
+import { logger } from "https://deno.land/x/hono_logger/mod.ts"; // Logging middleware
+import { basicAuth } from "https://deno.land/x/hono/middleware/basic-auth/index.ts"; // Rate limiting alternative
+import { limiter } from "https://deno.land/x/hono_rate_limiter/mod.ts";
 
+// Initialize Hono app
 const app = new Hono();
 
 // Middleware: Add secure headers
@@ -11,14 +18,20 @@ app.use("*", (c, next) => {
   return next();
 });
 
-// Middleware: Rate limiting (100 requests per 15 minutes per IP)
-app.use("*", rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
-
 // Middleware: Logging
 app.use("*", logger());
 
-// Middleware: XSS Protection for all endpoints
+// Middleware: XSS Protection
 app.use("*", xss());
+
+// Middleware: Rate Limiting using hono_rate_limiter
+app.use(
+  "*",
+  limiter({
+    max: 100, // Maximum requests
+    windowMs: 15 * 60 * 1000, // Time window in milliseconds (15 minutes)
+  })
+);
 
 // Serve the registration form
 app.get("/register", async (c) => {
