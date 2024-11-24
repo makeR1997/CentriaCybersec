@@ -1,83 +1,58 @@
 import { Hono } from "https://deno.land/x/hono/mod.ts";
-import client from "./db/db.js";
-import * as bcrypt from "https://deno.land/x/bcrypt/mod.ts"; // For password hashing
-import { xss } from "https://deno.land/x/hono_xss/mod.ts"; // For XSS protection
-import { logger } from "https://deno.land/x/hono_logger/mod.ts"; // Logging middleware
-import { basicAuth } from "https://deno.land/x/hono/middleware/basic-auth/index.ts"; // Rate limiting alternative
-import { limiter } from "https://deno.land/x/hono_rate_limiter/mod.ts";
+import { loginUser } from "./routes/login.js"; // Import login logic
+import { registerUser } from "./routes/register.js"; // Import register logic
+import { serveStatic } from "https://deno.land/x/hono/middleware.ts";
 
-// Initialize Hono app
 const app = new Hono();
 
-// Middleware: Add secure headers
-app.use("*", (c, next) => {
-  c.header("Content-Security-Policy", "default-src 'self'");
-  c.header("X-Frame-Options", "DENY");
-  c.header("X-Content-Type-Options", "nosniff");
-  c.header("X-XSS-Protection", "1; mode=block");
-  return next();
+// Middleware to set security headers globally
+app.use('*', (c, next) => {
+    // Set the Content-Type header (automatically set by Hono for HTML, CSS, JS)
+    c.header('Content-Type', 'text/html'); // This will change based on your content type (text/css, application/javascript, etc.)
+
+    // Set Content-Security-Policy header
+    c.header('Content-Security-Policy',
+        "default-src 'self'; " +
+        "script-src 'self'; " +
+        "style-src 'self'; " +
+        "img-src 'self'; " +
+        "frame-ancestors 'none'; " +
+        "form-action 'self';");  // Allow form submissions only to your own domain
+
+    // Set X-Frame-Options header to prevent Clickjacking
+    c.header('X-Frame-Options', 'DENY');  // Completely deny embedding
+
+    // Set X-Content-Type-Options header to 'nosniff'
+    c.header('X-Content-Type-Options', 'nosniff');
+
+    return next();
 });
 
-// Middleware: Logging
-app.use("*", logger());
+// Serve static files from the /static directory
+app.use('/static/styles.css', serveStatic({ root: '.' }));
 
-// Middleware: XSS Protection
-app.use("*", xss());
-
-// Middleware: Rate Limiting using hono_rate_limiter
-app.use(
-  "*",
-  limiter({
-    max: 100, // Maximum requests
-    windowMs: 15 * 60 * 1000, // Time window in milliseconds (15 minutes)
-  })
-);
+// Serve the index page
+app.get('/', async (c) => {
+    return c.html(await Deno.readTextFile('./views/index.html'));
+});
 
 // Serve the registration form
-app.get("/register", async (c) => {
-  try {
-    return c.html(await Deno.readTextFile("./views/register.html"));
-  } catch (error) {
-    console.error("Error reading the register form:", error);
-    return c.text("Error loading the registration form", 500);
-  }
+app.get('/register', async (c) => {
+    return c.html(await Deno.readTextFile('./views/register.html'));
 });
 
-// Handle user registration (form submission)
-app.post("/register", async (c) => {
-  const body = await c.req.parseBody();
+// Route for user registration (POST request)
+app.post('/register', registerUser);
 
-  // Input sanitization
-  const username = body.username.trim();
-  const password = body.password.trim();
-  const birthdate = body.birthdate.trim();
-  const role = body.role.trim();
-
-  try {
-    // Hash the user's password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Use parameterized queries to prevent SQL injection
-    const result = await client.queryArray(
-      `INSERT INTO zephyr_users (username, password_hash, role, birthdate)
-       VALUES ($1, $2, $3, $4)`,
-      [username, hashedPassword, role, birthdate]
-    );
-
-    // Success response
-    return c.text("User registered successfully!");
-  } catch (error) {
-    console.error("Error during registration:", error);
-    return c.text("Error during registration", 500);
-  }
+// Serve login page
+app.get('/login', async (c) => {
+    return c.html(await Deno.readTextFile('./views/login.html')); // Use the login.html file
 });
 
-// Example route to test server functionality
-app.get("/", (c) => c.text("Server is running securely!"));
+// Handle user login
+app.post('/login', loginUser);
 
-// Start the server
 Deno.serve(app.fetch);
 
-// To run the app, use the command:
+// Run the app using the command:
 // deno run --allow-net --allow-env --allow-read --watch app.js
