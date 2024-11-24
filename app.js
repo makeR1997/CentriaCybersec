@@ -1,9 +1,4 @@
 import { Hono } from "https://deno.land/x/hono/mod.ts";
-import client from "./db/db.js";
-import * as bcrypt from "https://deno.land/x/bcrypt/mod.ts"; // For password hashing
-import { rateLimit } from "https://deno.land/x/hono_rate_limit/mod.ts"; // For rate limiting
-import { xss } from "https://deno.land/x/hono_xss/mod.ts"; // For XSS protection
-import { logger } from "https://deno.land/x/hono_logger/mod.ts"; // Logging middleware
 
 const app = new Hono();
 
