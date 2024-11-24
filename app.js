@@ -5,7 +5,6 @@ import * as bcrypt from "https://deno.land/x/bcrypt/mod.ts"; // For password has
 
 const app = new Hono();
 
-const express = require('express');
 const helmet = require('helmet');
 const xss = require('xss-clean');
 const rateLimit = require('express-rate-limit');
