@@ -16,6 +16,6 @@
 **3.12.2024**, 2h, GDPR lecture   
 **5.12.2024**, 2h, Studying "https://websploit.org/" and "https://tryhackme.com/"  
 **6.12.2024**, 2h, Studying "https://www.hacksplaining.com/" and "https://www.hackthebox.com/"  
-**15.12.2024**, 2h, The Final Phase
+**15.12.2024**, 3h, The Final Phase
 
 
